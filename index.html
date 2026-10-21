@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Exercise Library</title>
+  <title>Exercise Library · 健身动作库</title>
   <style>
     /* ── Reset ─────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1021,6 +1021,63 @@
       vertical-align: middle;
     }
 
+  
+    /* ── Language Switcher & Chinese Typography ───────── */
+    .sidebar-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .lang-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+      line-height: 1.2;
+    }
+    .lang-toggle-btn:hover {
+      border-color: var(--accent);
+      background: var(--accent-muted);
+      color: var(--accent);
+    }
+    .lang-badge {
+      transition: color 0.15s ease;
+      color: var(--text-secondary);
+    }
+    .lang-badge.active {
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .lang-sep {
+      color: var(--text-tertiary);
+      font-size: 10px;
+    }
+    .card-name-sub {
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-weight: 400;
+      margin-top: 2px;
+      line-height: 1.25;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .modal-subtitle {
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      margin-top: 3px;
+    }
+
   </style>
 </head>
 <body>
@@ -1030,15 +1087,22 @@
   <aside class="sidebar">
     <div class="sidebar-header">
       <div class="sidebar-logo">Exercise<span>DB</span></div>
-      <a class="db-setup-btn" href="setup.html" target="_blank" title="Database Setup">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <ellipse cx="8" cy="4" rx="6" ry="2.5"/>
-          <path d="M2 4v3c0 1.38 2.69 2.5 6 2.5s6-1.12 6-2.5V4"/>
-          <path d="M2 7v3c0 1.38 2.69 2.5 6 2.5s6-1.12 6-2.5V7"/>
-          <path d="M2 10v2c0 1.38 2.69 2.5 6 2.5s6-1.12 6-2.5v-2"/>
-        </svg>
-        DB Setup
-      </a>
+      <div class="sidebar-actions">
+        <button class="lang-toggle-btn" id="lang-toggle" aria-label="Toggle language">
+          <span class="lang-badge" id="lang-badge-zh">中文</span>
+          <span class="lang-sep">/</span>
+          <span class="lang-badge" id="lang-badge-en">EN</span>
+        </button>
+        <a class="db-setup-btn" href="setup.html" target="_blank" title="Database Setup" id="db-setup-nav-btn">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="8" cy="4" rx="6" ry="2.5"/>
+            <path d="M2 4v3c0 1.38 2.69 2.5 6 2.5s6-1.12 6-2.5V4"/>
+            <path d="M2 7v3c0 1.38 2.69 2.5 6 2.5s6-1.12 6-2.5V7"/>
+            <path d="M2 10v2c0 1.38 2.69 2.5 6 2.5s6-1.12 6-2.5v-2"/>
+          </svg>
+          <span id="db-setup-nav-text">DB Setup</span>
+        </a>
+      </div>
     </div>
     <div class="sidebar-body">
       <!-- Search -->
@@ -1053,19 +1117,19 @@
 
       <!-- Category filter -->
       <div class="filter-section">
-        <div class="filter-summary">Category</div>
+        <div class="filter-summary" id="title-category">Category</div>
         <div class="filter-options" id="category-chips"></div>
       </div>
 
       <!-- Equipment filter -->
       <div class="filter-section">
-        <div class="filter-summary">Equipment</div>
+        <div class="filter-summary" id="title-equipment">Equipment</div>
         <div class="filter-options" id="equipment-chips"></div>
       </div>
 
       <!-- Target filter -->
       <div class="filter-section">
-        <div class="filter-summary">Target Muscle</div>
+        <div class="filter-summary" id="title-target">Target Muscle</div>
         <div class="filter-options" id="target-chips"></div>
       </div>
     </div>
@@ -1173,6 +1237,7 @@
 
   // ── State ──────────────────────────────────────────
   const state = {
+    lang: localStorage.getItem('exercises_lang') || 'zh', // default to Chinese
     exercises: [],
     filtered: [],
     search: '',
@@ -1203,6 +1268,305 @@
   const modalMuscles  = document.getElementById('modal-muscles');
   const modalInstr    = document.getElementById('modal-instructions');
   const modalClose    = document.getElementById('modal-close');
+  const langToggleBtn = document.getElementById('lang-toggle');
+
+  // ── I18N Dictionaries ──────────────────────────────
+  const CATEGORIES_ZH = {
+    'back': '背部',
+    'cardio': '有氧',
+    'chest': '胸部',
+    'lower arms': '前臂/小臂',
+    'lower legs': '小腿',
+    'neck': '颈部',
+    'shoulders': '肩部',
+    'upper arms': '大臂/上臂',
+    'upper legs': '大腿',
+    'waist': '腰腹部'
+  };
+
+  const EQUIPMENT_ZH = {
+    'assisted': '自重辅助',
+    'band': '弹力带',
+    'barbell': '杠铃',
+    'body weight': '自重',
+    'bosu ball': '波速球',
+    'cable': '绳索/缆绳',
+    'dumbbell': '哑铃',
+    'elliptical machine': '椭圆机',
+    'ez barbell': '曲杠杠铃',
+    'hammer': '铁锤',
+    'kettlebell': '壶铃',
+    'leverage machine': '固定器械',
+    'medicine ball': '药球',
+    'olympic barbell': '奥林匹克杠铃',
+    'resistance band': '阻力带',
+    'roller': '泡沫轴',
+    'rope': '战绳/跳绳',
+    'skierg machine': '滑雪机',
+    'sled machine': '推胸车/雪橇机',
+    'smith machine': '史密斯机',
+    'stability ball': '瑞士球/健身球',
+    'stationary bike': '动感单车',
+    'stepmill machine': '楼梯机',
+    'tire': '轮胎',
+    'trap bar': '六角杠铃',
+    'upper body ergometer': '手摇健身车',
+    'weighted': '负重',
+    'wheel roller': '健腹轮'
+  };
+
+  const TARGETS_ZH = {
+    'abductors': '髋外展肌群',
+    'abs': '腹肌',
+    'adductors': '髋内收肌群',
+    'biceps': '肱二头肌',
+    'calves': '小腿三头肌',
+    'cardiovascular system': '心肺系统',
+    'delts': '三角肌',
+    'forearms': '前臂肌群',
+    'glutes': '臀大肌',
+    'hamstrings': '腘绳肌 (腿后)',
+    'lats': '背阔肌',
+    'levator scapulae': '肩胛提肌',
+    'pectorals': '胸大肌',
+    'quads': '股四头肌 (腿前)',
+    'serratus anterior': '前锯肌 (鲨鱼线)',
+    'spine': '脊柱伸肌群',
+    'traps': '斜方肌',
+    'triceps': '肱三头肌',
+    'upper back': '上背肌群'
+  };
+
+  const MUSCLES_ZH = {
+    ...TARGETS_ZH,
+    'abdominals': '腹直肌群',
+    'ankle stabilizers': '踝关节稳定肌',
+    'ankles': '脚踝',
+    'back': '背部肌群',
+    'brachialis': '肱肌',
+    'chest': '胸肌',
+    'core': '核心肌群',
+    'deltoids': '三角肌',
+    'feet': '足部',
+    'grip muscles': '握力肌群',
+    'groin': '腹股沟',
+    'hands': '手部',
+    'hip flexors': '屈髋肌群',
+    'inner thighs': '大腿内侧',
+    'latissimus dorsi': '背阔肌',
+    'lower abs': '下腹肌',
+    'lower back': '下背/竖脊肌',
+    'obliques': '腹外斜肌',
+    'quadriceps': '股四头肌',
+    'rear deltoids': '三角肌后束',
+    'rhomboids': '菱形肌',
+    'rotator cuff': '肩袖肌群',
+    'shins': '胫骨前肌',
+    'soleus': '比目鱼肌',
+    'sternocleidomastoid': '胸锁乳突肌',
+    'trapezius': '斜方肌',
+    'upper chest': '上胸',
+    'wrist extensors': '伸腕肌',
+    'wrist flexors': '屈腕肌',
+    'wrists': '手腕'
+  };
+
+  const I18N = {
+    en: {
+      searchPlaceholder: 'Search 1,324 exercises…',
+      category: 'Category',
+      equipment: 'Equipment',
+      target: 'Target Muscle',
+      dbSetup: 'DB Setup',
+      clearAll: 'Clear all',
+      noFound: 'No exercises found',
+      muscles: 'Muscles',
+      primary: 'Primary',
+      secondary: 'Secondary',
+      instructions: 'Instructions',
+      bodyPart: 'Body Part',
+      more: (n) => `+${n} more`,
+      countAll: (all) => `${all.toLocaleString()} exercises`,
+      countFiltered: (tot, all) => `${tot.toLocaleString()} of ${all.toLocaleString()} exercises`,
+    },
+    zh: {
+      searchPlaceholder: '搜索 1,324 个动作 (支持中英文，如 卧推、深蹲、chest)…',
+      category: '训练部位',
+      equipment: '所需器材',
+      target: '目标肌群',
+      dbSetup: '数据库配置',
+      clearAll: '清空筛选',
+      noFound: '未找到匹配的动作',
+      muscles: '肌群分布',
+      primary: '主要受力',
+      secondary: '次要受力',
+      instructions: '动作教学步骤',
+      bodyPart: '身体部位',
+      more: (n) => `+${n} 更多`,
+      countAll: (all) => `共 ${all.toLocaleString()} 个动作`,
+      countFiltered: (tot, all) => `筛选出 ${tot.toLocaleString()} / 共 ${all.toLocaleString()} 个动作`,
+    }
+  };
+
+  function t(key, ...args) {
+    const lang = state.lang;
+    const val = I18N[lang]?.[key] ?? I18N.en[key];
+    return typeof val === 'function' ? val(...args) : val;
+  }
+
+  function tCategory(cat) {
+    return state.lang === 'zh' ? (CATEGORIES_ZH[cat] || cat) : cat;
+  }
+
+  function tEquipment(eq) {
+    return state.lang === 'zh' ? (EQUIPMENT_ZH[eq] || eq) : eq;
+  }
+
+  function tTarget(target) {
+    return state.lang === 'zh' ? (TARGETS_ZH[target] || target) : target;
+  }
+
+  function tMuscle(m) {
+    return state.lang === 'zh' ? (MUSCLES_ZH[m] || m) : m;
+  }
+
+  // ── Smart Chinese Name Translator ───────────────────
+  const NAME_RULES = [
+    [/\b3\/4 sit-up\b/i, '3/4 仰卧起坐'],
+    [/\b45° side bend\b/i, '45度体侧屈'],
+    [/\bair bike\b/i, '空中自行车'],
+    [/\bjumping jack(s)?\b/i, '开合跳'],
+    [/\bburpee(s)?\b/i, '波比跳'],
+    [/\bmountain climber(s)?\b/i, '登山跑'],
+    [/\brussian twist\b/i, '俄罗斯转体'],
+    [/\bface pull(s)?\b/i, '面拉'],
+    [/\bgood morning(s)?\b/i, '早安式体前屈'],
+    [/\bhyperextension(s)?\b/i, '山羊挺身'],
+    [/\bdead bug(s)?\b/i, '死虫式'],
+    [/\bbird dog\b/i, '鸟狗式'],
+    [/\bglute bridge\b/i, '臀桥'],
+    [/\bhip thrust\b/i, '臀推'],
+    [/\bskull crusher(s)?\b/i, '碎颅者仰卧臂屈伸'],
+    [/\bclose[- ]grip bench press\b/i, '窄握卧推'],
+    [/\bincline bench press\b/i, '上斜卧推'],
+    [/\bdecline bench press\b/i, '下斜卧推'],
+    [/\bbench press\b/i, '卧推'],
+    [/\bchest press\b/i, '推胸'],
+    [/\bshoulder press\b/i, '肩上推举'],
+    [/\boverhead press\b/i, '过顶推举'],
+    [/\bmilitary press\b/i, '军式推举'],
+    [/\bpush press\b/i, '借力推举'],
+    [/\barnold press\b/i, '阿诺德推举'],
+    [/\bpush[- ]up(s)?\b/i, '俯卧撑'],
+    [/\bpull[- ]up(s)?\b/i, '引体向上'],
+    [/\bchin[- ]up(s)?\b/i, '反握引体向上'],
+    [/\blat pull[- ]down\b/i, '高位下拉'],
+    [/\bpull[- ]down\b/i, '下拉'],
+    [/\bseated row\b/i, '坐姿划船'],
+    [/\bbent[- ]over row\b/i, '俯身划船'],
+    [/\binverted row\b/i, '仰卧悬垂划船'],
+    [/\bupright row\b/i, '直立划船'],
+    [/\bt[- ]bar row\b/i, 'T杠划船'],
+    [/\brow\b/i, '划船'],
+    [/\bfront squat\b/i, '前蹲'],
+    [/\bgoblet squat\b/i, '高脚杯深蹲'],
+    [/\bbulgarian split squat\b/i, '保加利亚分腿蹲'],
+    [/\bsplit squat\b/i, '分腿蹲'],
+    [/\bhack squat\b/i, '哈克深蹲'],
+    [/\bjump squat\b/i, '跳跃深蹲'],
+    [/\bsquat\b/i, '深蹲'],
+    [/\bwalking lunge(s)?\b/i, '弓步走'],
+    [/\bside lunge(s)?\b/i, '侧向箭步蹲'],
+    [/\blunge(s)?\b/i, '箭步蹲'],
+    [/\bpreacher curl\b/i, '牧师凳弯举'],
+    [/\bconcentration curl\b/i, '集中弯举'],
+    [/\bhammer curl\b/i, '锤式弯举'],
+    [/\bbiceps curl\b/i, '二头弯举'],
+    [/\bwrist curl\b/i, '正握腕弯举'],
+    [/\breverse wrist curl\b/i, '反握腕弯举'],
+    [/\bcurl\b/i, '弯举'],
+    [/\boverhead triceps extension\b/i, '过顶三头臂屈伸'],
+    [/\btriceps extension\b/i, '三头臂屈伸'],
+    [/\btriceps kickback\b/i, '三头后屈伸'],
+    [/\bkickback(s)?\b/i, '后屈伸/后踢'],
+    [/\bchest dip(s)?\b/i, '双杠推胸'],
+    [/\btriceps dip(s)?\b/i, '双杠臂屈伸'],
+    [/\bdip(s)?\b/i, '臂屈伸'],
+    [/\blateral raise\b/i, '侧平举'],
+    [/\bfront raise\b/i, '前平举'],
+    [/\brear delt fly\b/i, '三角肌后束飞鸟'],
+    [/\breverse fly\b/i, '反向飞鸟'],
+    [/\bchest fly\b/i, '胸部飞鸟'],
+    [/\bfly(es)?\b/i, '飞鸟'],
+    [/\bshrug(s)?\b/i, '耸肩'],
+    [/\bleg press\b/i, '倒蹬机腿举'],
+    [/\bleg extension\b/i, '坐姿腿屈伸'],
+    [/\bleg curl\b/i, '俯卧腿弯举'],
+    [/\bstanding calf raise\b/i, '站姿提踵'],
+    [/\bseated calf raise\b/i, '坐姿提踵'],
+    [/\bcalf raise\b/i, '提踵'],
+    [/\breverse crunch\b/i, '反向卷腹'],
+    [/\bbicycle crunch\b/i, '空中自行车卷腹'],
+    [/\bcrunch\b/i, '卷腹'],
+    [/\bsit[- ]up\b/i, '仰卧起坐'],
+    [/\bhanging leg raise\b/i, '悬垂举腿'],
+    [/\bleg raise\b/i, '举腿'],
+    [/\bhanging knee raise\b/i, '悬垂提膝'],
+    [/\bknee raise\b/i, '提膝'],
+    [/\bside plank\b/i, '侧平板支撑'],
+    [/\bplank\b/i, '平板支撑'],
+    [/\bpullover\b/i, '仰卧拉力'],
+    [/\bstretch\b/i, '拉伸'],
+    [/\bromanian deadlift\b/i, '罗马尼亚硬拉'],
+    [/\bstiff leg deadlift\b/i, '直腿硬拉'],
+    [/\bsumo deadlift\b/i, '相扑硬拉'],
+    [/\bdeadlift\b/i, '硬拉'],
+    [/\bstanding\b/i, '站姿'],
+    [/\bseated\b/i, '坐姿'],
+    [/\blying\b/i, '仰卧'],
+    [/\bincline\b/i, '上斜'],
+    [/\bdecline\b/i, '下斜'],
+    [/\bkneeling\b/i, '跪姿'],
+    [/\bhanging\b/i, '悬垂'],
+    [/\bbent[- ]over\b/i, '俯身'],
+    [/\bsingle[- ]arm\b/i, '单臂'],
+    [/\bsingle[- ]leg\b/i, '单腿'],
+    [/\bone[- ]arm\b/i, '单臂'],
+    [/\bone[- ]leg\b/i, '单腿'],
+    [/\balternate\b/i, '交替'],
+    [/\balternating\b/i, '交替'],
+    [/\breverse\b/i, '反向'],
+    [/\bclose[- ]grip\b/i, '窄握'],
+    [/\bwide[- ]grip\b/i, '宽握'],
+    [/\boverhead\b/i, '过顶'],
+    [/\bcable\b/i, '绳索'],
+    [/\bbarbell\b/i, '杠铃'],
+    [/\bdumbbell\b/i, '哑铃'],
+    [/\bkettlebell\b/i, '壶铃'],
+    [/\bsmith machine\b/i, '史密斯'],
+    [/\bsmith\b/i, '史密斯'],
+    [/\bband\b/i, '弹力带'],
+    [/\blever\b/i, '器械'],
+    [/\bez barbell\b/i, '曲杠'],
+    [/\bstability ball\b/i, '健身球'],
+    [/\bmedicine ball\b/i, '药球'],
+    [/\bbosu ball\b/i, '波速球'],
+    [/\bbodyweight\b/i, '自重'],
+    [/\bweighted\b/i, '负重'],
+    [/\bheel touchers\b/i, '摸脚后跟'],
+    [/\btoe touch\b/i, '摸脚尖'],
+    [/\bcircle(s)?\b/i, '绕环'],
+    [/\barcher\b/i, '弓箭手'],
+  ];
+
+  function translateExerciseName(ex) {
+    let name = ex.name;
+    for (const [re, rep] of NAME_RULES) {
+      name = name.replace(re, rep);
+    }
+    // Clean up excessive whitespace
+    return name.replace(/\s+/g, ' ').trim();
+  }
 
   // ── Utility ────────────────────────────────────────
   function debounce(fn, ms) {
@@ -1222,14 +1586,51 @@
   function init() {
     state.exercises = EXERCISES;
 
-    // Pre-compute search index per exercise
+    // Pre-compute Chinese names and bilingual search index
     state.exercises.forEach(ex => {
-      ex._idx = `${ex.name} ${ex.category} ${ex.target} ${ex.equipment} ${ex.muscle_group}`.toLowerCase();
+      const zhName = translateExerciseName(ex);
+      const zhCat = CATEGORIES_ZH[ex.category] || '';
+      const zhEquip = EQUIPMENT_ZH[ex.equipment] || '';
+      const zhTarget = TARGETS_ZH[ex.target] || '';
+      const zhMuscles = (ex.secondary_muscles || []).map(m => MUSCLES_ZH[m] || m).join(' ');
+      const zhInstr = (ex.instructions?.zh || '');
+
+      ex._zhName = zhName;
+      ex._idx = `${ex.name} ${zhName} ${ex.category} ${zhCat} ${ex.target} ${zhTarget} ${ex.equipment} ${zhEquip} ${ex.muscle_group} ${zhMuscles} ${zhInstr}`.toLowerCase();
     });
 
+    updateLangUI();
     buildFilterOptions();
     applyFilters();
     wireEvents();
+  }
+
+  // ── Language Toggle UI ─────────────────────────────
+  function setLanguage(newLang) {
+    state.lang = newLang;
+    localStorage.setItem('exercises_lang', newLang);
+    updateLangUI();
+    buildFilterOptions();
+    applyFilters();
+  }
+
+  function updateLangUI() {
+    const isZh = state.lang === 'zh';
+    const badgeZh = document.getElementById('lang-badge-zh');
+    const badgeEn = document.getElementById('lang-badge-en');
+    if (badgeZh) badgeZh.classList.toggle('active', isZh);
+    if (badgeEn) badgeEn.classList.toggle('active', !isZh);
+
+    searchEl.placeholder = t('searchPlaceholder');
+    const catTitle = document.getElementById('title-category');
+    if (catTitle) catTitle.textContent = t('category');
+    const eqTitle = document.getElementById('title-equipment');
+    if (eqTitle) eqTitle.textContent = t('equipment');
+    const tgtTitle = document.getElementById('title-target');
+    if (tgtTitle) tgtTitle.textContent = t('target');
+    const dbNav = document.getElementById('db-setup-nav-text');
+    if (dbNav) dbNav.textContent = t('dbSetup');
+    document.documentElement.lang = isZh ? 'zh-CN' : 'en';
   }
 
   // ── Build Filter Chips ─────────────────────────────
@@ -1238,33 +1639,34 @@
     const equips = uniqueSorted(state.exercises.map(e => e.equipment));
     const targets = uniqueSorted(state.exercises.map(e => e.target));
 
-    renderChips('category-chips',  cats,   'category');
-    renderChips('equipment-chips', equips, 'equipment');
-    renderChips('target-chips',    targets,'target');
+    renderChips('category-chips',  cats,   'category',  null, tCategory);
+    renderChips('equipment-chips', equips, 'equipment', EQUIP_INITIAL, tEquipment);
+    renderChips('target-chips',    targets,'target',    null, tTarget);
   }
 
-  function renderChips(containerId, values, filterKey, initialLimit = null) {
+  function renderChips(containerId, values, filterKey, initialLimit = null, labelFn = null) {
     const container = document.getElementById(containerId);
+    if (!container) return;
     container.innerHTML = '';
 
     const toShow = initialLimit ? values.slice(0, initialLimit) : values;
     const rest   = initialLimit ? values.slice(initialLimit) : [];
 
     toShow.forEach(val => {
-      container.appendChild(makeChip(val, filterKey));
+      container.appendChild(makeChip(val, filterKey, labelFn ? labelFn(val) : val));
     });
 
     if (rest.length > 0) {
       // Hidden chips
       const hiddenWrap = document.createElement('div');
       hiddenWrap.style.cssText = 'display:none;flex-wrap:wrap;gap:5px;width:100%;';
-      rest.forEach(val => hiddenWrap.appendChild(makeChip(val, filterKey)));
+      rest.forEach(val => hiddenWrap.appendChild(makeChip(val, filterKey, labelFn ? labelFn(val) : val)));
       container.appendChild(hiddenWrap);
 
       // Show more button
       const moreBtn = document.createElement('button');
       moreBtn.className = 'chip filter-show-more';
-      moreBtn.textContent = `+${rest.length} more`;
+      moreBtn.textContent = t('more', rest.length);
       moreBtn.addEventListener('click', () => {
         hiddenWrap.style.display = 'flex';
         moreBtn.remove();
@@ -1273,10 +1675,13 @@
     }
   }
 
-  function makeChip(value, filterKey) {
+  function makeChip(value, filterKey, label) {
     const btn = document.createElement('button');
     btn.className = 'chip';
-    btn.textContent = value;
+    if (state.filters[filterKey].has(value)) {
+      btn.classList.add('active');
+    }
+    btn.textContent = label || value;
     btn.dataset.filter = filterKey;
     btn.dataset.value  = value;
     return btn;
@@ -1315,7 +1720,7 @@
     if (slice.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'empty-state';
-      empty.innerHTML = '<p>🔍</p><p>No exercises found</p>';
+      empty.innerHTML = `<p>🔍</p><p>${t('noFound')}</p>`;
       gridEl.appendChild(empty);
       spinnerEl.classList.remove('visible');
       return;
@@ -1371,24 +1776,34 @@
     const body = document.createElement('div');
     body.className = 'card-body';
 
+    const isZh = state.lang === 'zh';
+    const displayName = isZh ? (ex._zhName || ex.name) : ex.name;
+
     const name = document.createElement('h3');
     name.className = 'card-name';
-    name.textContent = ex.name;
+    name.textContent = displayName;
+    body.appendChild(name);
+
+    if (isZh && ex._zhName && ex._zhName !== ex.name) {
+      const sub = document.createElement('div');
+      sub.className = 'card-name-sub';
+      sub.textContent = ex.name;
+      body.appendChild(sub);
+    }
 
     const tags = document.createElement('div');
     tags.className = 'card-tags';
 
     const catTag = document.createElement('span');
     catTag.className = 'tag tag-cat';
-    catTag.textContent = ex.category;
+    catTag.textContent = tCategory(ex.category);
 
     const equipTag = document.createElement('span');
     equipTag.className = 'tag tag-equip';
-    equipTag.textContent = ex.equipment;
+    equipTag.textContent = tEquipment(ex.equipment);
 
     tags.appendChild(catTag);
     tags.appendChild(equipTag);
-    body.appendChild(name);
     body.appendChild(tags);
     article.appendChild(media);
     article.appendChild(body);
@@ -1418,8 +1833,8 @@
     const total = state.filtered.length;
     const all   = state.exercises.length;
     countEl.textContent = total === all
-      ? `${all.toLocaleString()} exercises`
-      : `${total.toLocaleString()} of ${all.toLocaleString()} exercises`;
+      ? t('countAll', all)
+      : t('countFiltered', total, all);
   }
 
   function updateActiveBadges() {
@@ -1427,24 +1842,25 @@
     const { category, equipment, target } = state.filters;
     let hasAny = false;
 
-    const addBadges = (set, key) => {
+    const addBadges = (set, key, labelFn) => {
       set.forEach(val => {
         hasAny = true;
         const badge = document.createElement('span');
         badge.className = 'active-badge';
-        badge.innerHTML = `${val}<button class="active-badge-remove" data-filter="${key}" data-value="${val}" aria-label="Remove ${val}">×</button>`;
+        const display = labelFn ? labelFn(val) : val;
+        badge.innerHTML = `${display}<button class="active-badge-remove" data-filter="${key}" data-value="${val}" aria-label="Remove ${display}">×</button>`;
         activeFilEl.appendChild(badge);
       });
     };
 
-    addBadges(category,  'category');
-    addBadges(equipment, 'equipment');
-    addBadges(target,    'target');
+    addBadges(category,  'category',  tCategory);
+    addBadges(equipment, 'equipment', tEquipment);
+    addBadges(target,    'target',    tTarget);
 
     if (hasAny) {
       const clearAll = document.createElement('button');
       clearAll.className = 'clear-all';
-      clearAll.textContent = 'Clear all';
+      clearAll.textContent = t('clearAll');
       clearAll.addEventListener('click', clearAllFilters);
       activeFilEl.appendChild(clearAll);
     }
@@ -1468,16 +1884,32 @@
     const ex = state.exercises.find(e => e.id === id);
     if (!ex) return;
 
-    modalTitle.textContent = ex.name;
+    const isZh = state.lang === 'zh';
+    modalTitle.textContent = isZh ? (ex._zhName || ex.name) : ex.name;
+
+    let sub = modalTitle.parentElement.querySelector('.modal-subtitle');
+    if (!sub) {
+      sub = document.createElement('div');
+      sub.className = 'modal-subtitle';
+      modalTitle.after(sub);
+    }
+    if (isZh && ex._zhName && ex._zhName !== ex.name) {
+      sub.textContent = ex.name;
+      sub.style.display = 'block';
+    } else {
+      sub.textContent = '';
+      sub.style.display = 'none';
+    }
+
     modalGif.src = ex.gif_url;
     modalGif.alt = ex.name;
 
     // Meta chips
     modalMeta.innerHTML = '';
     const metaItems = [
-      { label: 'Body Part', value: ex.body_part || ex.category },
-      { label: 'Equipment', value: ex.equipment },
-      { label: 'Target',    value: ex.target },
+      { label: t('bodyPart'), value: tCategory(ex.body_part || ex.category) },
+      { label: t('equipment'), value: tEquipment(ex.equipment) },
+      { label: t('target'),    value: tTarget(ex.target) },
     ];
     metaItems.forEach(({ label, value }) => {
       const chip = document.createElement('div');
@@ -1494,7 +1926,7 @@
 
     const musclesHeader = document.createElement('div');
     musclesHeader.className = 'modal-muscles-label';
-    musclesHeader.textContent = 'Muscles';
+    musclesHeader.textContent = t('muscles');
     modalMuscles.appendChild(musclesHeader);
 
     const musclesGrid = document.createElement('div');
@@ -1509,18 +1941,18 @@
       const row = document.createElement('div');
       row.className = 'muscle-tags';
       names.forEach(name => {
-        const t = document.createElement('span');
-        t.className = 'muscle-tag' + (isPrimary ? ' primary' : '');
-        t.textContent = name;
-        row.appendChild(t);
+        const tSpan = document.createElement('span');
+        tSpan.className = 'muscle-tag' + (isPrimary ? ' primary' : '');
+        tSpan.textContent = tMuscle(name);
+        row.appendChild(tSpan);
       });
       group.appendChild(lbl);
       group.appendChild(row);
       return group;
     };
 
-    if (primaryMuscles.length > 0)   musclesGrid.appendChild(makeMuscleGroup('Primary', primaryMuscles, true));
-    if (secondaryMuscles.length > 0)  musclesGrid.appendChild(makeMuscleGroup('Secondary', secondaryMuscles, false));
+    if (primaryMuscles.length > 0)   musclesGrid.appendChild(makeMuscleGroup(t('primary'), primaryMuscles, true));
+    if (secondaryMuscles.length > 0)  musclesGrid.appendChild(makeMuscleGroup(t('secondary'), secondaryMuscles, false));
     if (primaryMuscles.length > 0 || secondaryMuscles.length > 0) modalMuscles.appendChild(musclesGrid);
 
     // Instructions — format is always keyed by language code
@@ -1533,7 +1965,7 @@
     if (langs.length > 0) {
       const instrLabel = document.createElement('span');
       instrLabel.className = 'modal-instructions-label';
-      instrLabel.textContent = 'Instructions';
+      instrLabel.textContent = t('instructions');
       modalInstr.appendChild(instrLabel);
 
       const list = document.createElement('ol');
@@ -1549,28 +1981,34 @@
         });
       }
 
+      // Default active lang: zh if in Chinese mode and zh is available
+      const defaultLangCode = (isZh && langs.some(l => l.code === 'zh')) ? 'zh' : langs[0].code;
+
       if (langs.length > 1) {
         const tabs = document.createElement('div');
         tabs.className = 'lang-tabs';
-        const tabButtons = langs.map((l, i) => {
+        const tabButtons = langs.map(l => {
           const btn = document.createElement('button');
-          btn.className = 'lang-tab' + (i === 0 ? ' active' : '');
+          btn.className = 'lang-tab' + (l.code === defaultLangCode ? ' active' : '');
           btn.textContent = LANG_LABELS[l.code] ?? l.code;
+          btn.dataset.code = l.code;
           tabs.appendChild(btn);
           return btn;
         });
         modalInstr.appendChild(tabs);
 
-        tabButtons.forEach((btn, i) => {
+        tabButtons.forEach(btn => {
           btn.addEventListener('click', () => {
             tabButtons.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            renderSteps(langs[i].steps);
+            const targetLang = langs.find(l => l.code === btn.dataset.code);
+            if (targetLang) renderSteps(targetLang.steps);
           });
         });
       }
 
-      renderSteps(langs[0].steps);
+      const defaultLangObj = langs.find(l => l.code === defaultLangCode) || langs[0];
+      renderSteps(defaultLangObj.steps);
       modalInstr.appendChild(list);
     }
 
@@ -1587,6 +2025,13 @@
 
   // ── Events ─────────────────────────────────────────
   function wireEvents() {
+    // Language Toggle
+    if (langToggleBtn) {
+      langToggleBtn.addEventListener('click', () => {
+        setLanguage(state.lang === 'zh' ? 'en' : 'zh');
+      });
+    }
+
     // Search
     searchEl.addEventListener('input', debounce(() => {
       state.search = searchEl.value;
@@ -1656,7 +2101,6 @@
     }, { rootMargin: '200px' });
     observer.observe(sentinelEl);
   }
-
 
   // ── Boot ───────────────────────────────────────────
   init();
@@ -1843,7 +2287,6 @@
 
       lines.push(`INSERT INTO exercises (id, name, category, body_part, equipment, instructions_en, instructions_es, instructions_it, instructions_tr, instructions_ru, instructions_zh, instructions_hi, instructions_pl, instructions_ko, muscle_group, secondary_muscles, target, image, gif_url, created_at) VALUES (${vals});`);
 
-      // Batch commits every 50 rows for MSSQL compatibility
       if (db === 'mssql' && (i + 1) % 50 === 0 && i + 1 < exercises.length) {
         lines.push('GO');
       }
@@ -1876,14 +2319,16 @@
     }, 10);
   }
 
-  // Wire DB Setup events
-  dbOpenBtn.addEventListener('click', openDbSetup);
-  dbCloseBtn.addEventListener('click', closeDbSetup);
-  dbOverlay.addEventListener('click', e => { if (e.target === dbOverlay) closeDbSetup(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && dbOverlay.classList.contains('open')) closeDbSetup(); });
+  // Safe Wire DB Setup events
+  if (dbOpenBtn) dbOpenBtn.addEventListener('click', openDbSetup);
+  if (dbCloseBtn) dbCloseBtn.addEventListener('click', closeDbSetup);
+  if (dbOverlay) {
+    dbOverlay.addEventListener('click', e => { if (e.target === dbOverlay) closeDbSetup(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && dbOverlay.classList.contains('open')) closeDbSetup(); });
+  }
   dbTabs.forEach(tab => tab.addEventListener('click', () => switchDbTab(tab.dataset.db)));
-  copyCreateBtn.addEventListener('click', () => copyToClipboard(DB_SQL[currentDb], copyCreateBtn));
-  generateBtn.addEventListener('click', generateInsertSql);
+  if (copyCreateBtn) copyCreateBtn.addEventListener('click', () => copyToClipboard(DB_SQL[currentDb], copyCreateBtn));
+  if (generateBtn) generateBtn.addEventListener('click', generateInsertSql);
 </script>
 </body>
 </html>
